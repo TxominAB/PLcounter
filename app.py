@@ -13,8 +13,8 @@ model = YOLO(MODEL_PATH)
 # Streamlit UI
 st.set_page_config(page_title="PL counter model", layout="wide")
 
-st.title("YOLOv8m Object Detection App")
-st.write("Upload an image, and the model will detect objects.")
+st.title("PL counter model")
+st.write("Upload an image to detect and count shrimps.")
 
 # Image uploader
 uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
