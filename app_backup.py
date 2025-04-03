@@ -13,33 +13,20 @@ model = YOLO(MODEL_PATH)
 # Streamlit UI
 st.set_page_config(page_title="PL counter model", layout="wide")
 
-st.title("PL Counter Model")
+st.title("PL counter model")
 st.write("Upload an image to detect and count shrimps.")
 
 # Image uploader
 uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    try:
-        # Verify image integrity
-        image = Image.open(uploaded_file)
-        image.verify()  # Check for corruption
-        image = Image.open(uploaded_file).convert("RGB")  # Convert to RGB if necessary
-    except Exception as e:
-        st.error(f"Error loading image: {e}")
-        st.stop()
-
-    # Ensure image size is within a reasonable range for YOLOv8
-    image_resized = image.resize((640, 640))  # Resize to YOLOv8 default size
-    img_np = np.array(image_resized)
-
-    # Ensure image is 3-channel RGB
-    if img_np.shape[-1] != 3:
-        img_np = cv2.cvtColor(img_np, cv2.COLOR_GRAY2RGB)  # Convert grayscale to RGB if needed
-
+    # Convert to OpenCV format
+    image = Image.open(uploaded_file)
+    img_np = np.array(image)
+    
     # Run inference
     results = model(img_np)
-
+    
     # Extract bounding boxes
     detected_img, total_objects = draw_bboxes(img_np, results)
 
