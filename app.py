@@ -1,58 +1,44 @@
 import streamlit as st
+import torch
 import cv2
 import numpy as np
 from PIL import Image
 from ultralytics import YOLO
+from utils import draw_bboxes
 
-# Custom CSS for background color
-st.markdown(
-    """
-    <style>
-    body {
-        background-color: #0071BF;
-        color: white;
-    }
-    .stApp {
-        background-color: #0071BF;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+# Load YOLOv8m model
+MODEL_PATH = "best.pt"
+model = YOLO(MODEL_PATH)
 
-# Load the custom YOLOv8 model
-model_path = "best.pt"  # Update this path to your model
-model = YOLO(model_path)
+# Streamlit UI
+st.set_page_config(page_title="PL counter model", layout="wide")
 
-st.title("Grobest Group PL counter app")
-st.write("Upload an image for PL counting.")
+st.title("YOLOv8m Object Detection App")
+st.write("Upload an image, and the model will detect objects.")
 
-# Display image from local drive at the top
-local_image_path = "GB_logo.png"  # Update this path to your local image
-top_image = Image.open(local_image_path)
-st.image(top_image, caption='Top Image', use_column_width=True)
-
-# Upload image
-uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+# Image uploader
+uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    # Convert the file to an OpenCV image
-    file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
-    opencv_image = cv2.imdecode(file_bytes, 1)
+    # Convert to OpenCV format
+    image = Image.open(uploaded_file)
+    img_np = np.array(image)
+    
+    # Run inference
+    results = model(img_np)
+    
+    # Extract bounding boxes
+    detected_img, total_objects = draw_bboxes(img_np, results)
 
-    # Run YOLOv8 model inference
-    results = model(opencv_image)
+    # Display results
+    col1, col2 = st.columns(2)
 
-    # Get the number of detected objects (assuming one class for detection)
-    num_objects = len(results[0].boxes)
+    with col1:
+        st.subheader("Original Image")
+        st.image(image, use_column_width=True)
 
-    # Draw bounding boxes on the image
-    for box in results[0].boxes:
-        x1, y1, x2, y2 = box.xyxy[0]  # Access the coordinates correctly
-        cv2.rectangle(opencv_image, (int(x1), int(y1)), (int(x2), int(y2)), (255, 0, 0), 2)
+    with col2:
+        st.subheader(f"Detected Objects: {total_objects}")
+        st.image(detected_img, use_column_width=True)
 
-    # Convert back to PIL image
-    result_image = Image.fromarray(cv2.cvtColor(opencv_image, cv2.COLOR_BGR2RGB))
-
-    st.image(result_image, caption='Processed Image', use_column_width=True)
-    st.write(f"Total number of objects detected: {num_objects}")
+    st.write(f"Total objects detected: **{total_objects}**")
